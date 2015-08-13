@@ -89,7 +89,7 @@ PSP2CLIENT FOR PC/MAC
  [DEBUG]: dir close reply received (ret 0)
  ```
  
- 5) ready to have a lot of fun :P
+ 3) ready to have a lot of fun :P
  
 ===================
  What next?
