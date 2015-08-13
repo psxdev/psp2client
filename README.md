@@ -1,51 +1,31 @@
-PSP2LINK FOR VITA
+PSP2CLIENT FOR PC/MAC
 =================
  
 ===================
  What does this do?
 ===================
  
-  psp2link is a library for PSP2 to communicate and use host file system with psp2client host tool. It is the same method that we used in ps2dev days, so basically it is the same protocol than ps2link and ps2client have been using since 2003.
+  psp2client is a host tool providing host fileio system for PSP2. It is the same method that we used in ps2dev days, so basically it is the same protocol than ps2link and ps2client have been using since 2003.
   
-  Functions availables are defined like native sceIoxx functions so it is easy for homebrew developer to use these new functions:
-  ```
-  int psp2LinkIoOpen(const char *file, int flags, SceMode mode);
-  int psp2LinkIoClose(SceUID fd);
-  int psp2LinkIoRead(SceUID fd, void *data, SceSize size);
-  int psp2LinkIoWrite(SceUID fd, const void *data, SceSize size);
-  int psp2LinkIoLseek(SceUID fd, int offset, int whence);
-  int psp2LinkIoRemove(const char *file);
-  int psp2LinkIoMkdir(const char *dirname, SceMode mode);
-  int psp2LinkIoRmdir(const char *dirname);
-  int psp2LinkIoDopen(const char *dirname);
-  int psp2LinkIoDread(SceUID fd, SceIoDirent *dir);
-  int psp2LinkIoDclose(SceUID fd);
-  ```
+  It provide all io request operation availables on psp2link library. Now command are not implemented but it can be easily incorporated.
   
+  By now only osx and linux confirmed to run fine. 
   
 ==================
   How do I use it?
 ==================
 
- 1) Compile and install library and include file
+ 1) Compile and install psp2client
 
-  You need a psp2 toolchain installed in your environment , libdebugnet and libvita2d  installed and PSP2SDK must be defined. You will need psp2client linux/mac side tool installed on your system.
+  You need a gcc installed in your environment 
   
   ```
-  cd libpsp2link
   make
   make install
   ```
   
- 2) Compile sample
-  
-  ```
-  cd sample
-  edit main.c and change your mac/linux server ip and your base directory for example host0:/usr/local
-  make
-  ```
 
- 3) Run sample with rejuvenete on vita and when you see psp2link splash screen you are ready to run psp2client in your mac/linux
+ 2) Run sample provided in psp2link with rejuvenete on vita and when you see psp2link splash screen you are ready to run psp2client in your mac/linux
    
   ```
   psp2client -h ipofyourvita listen 
@@ -115,11 +95,8 @@ PSP2LINK FOR VITA
  What next?
 ===================
   
-  Well, this library can be extended adding differents commands like ps2link was defined. It could be incorporated inside uvloader code and it would let load elf from hosts and provide host io fuctionality to homebrew apps. I am not going to do a loader when we have already uvloader backend. If it is not incorporated inside uvloader you can use like library showed in sample.
+  Add windows support, by now i have not free time to do it if someone want to add it contact with me.
   
-  About logging i like more udp log system like libdebugnet instead logging system incorporated in uvloader, but it is only my preference based only in my own experience since ps2dev days.
-  
-  If you don't want to use logging, initialize ps2plink with right loglevel check libdebugnet sources to see differents log levels availables.
   
 ===========================
   Credits
@@ -129,5 +106,4 @@ PSP2LINK FOR VITA
   
   - ps2dev old comrades. 
   - All people collaborating in PSP2SDK: @17310, @xerpi, @frangar, @frtomtomdu80, @hykemthedemon , @SMOKE587, @Josh_Axey ... 
-  - font in logo from http://www.fontspace.com/nal/the-rave-is-in-your-pants
   
