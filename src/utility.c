@@ -62,7 +62,6 @@ int fix_pathname(char *pathname)
 	{
 		for(loop0=0; loop0<strlen(pathname)-6; loop0++) { pathname[loop0] = pathname[loop0+6]; }
 		pathname[loop0] = 0;
-		printf("aqui\n");
 		
 	}
 	else

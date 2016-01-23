@@ -32,7 +32,7 @@
 extern int errno ;
 int console_socket = -1;
 int request_socket = -1;
-//int command_socket = -1; FOR FUTURE USE
+int command_socket = -1; 
 
 pthread_t console_thread_id;
 pthread_t request_thread_id;
@@ -83,7 +83,7 @@ int psp2link_connect(char *hostname)
 	}
   	
 	// Connect to the command port future use to send commands to psp2
-	//command_socket = network_connect(hostname, 0x4712, SOCK_DGRAM);
+	command_socket = network_connect(hostname, 0x4712, SOCK_DGRAM);
 
 	// Delay for a moment to let ps2link finish setup.
 #ifdef _WIN32
@@ -101,10 +101,10 @@ int psp2link_mainloop(int timeout)
 {
 
 	// Disconnect from the command port.
-	//if (network_disconnect(command_socket) < 0) 
-	//{ 
-	//	return -1; 
-	//}
+	if (network_disconnect(command_socket) < 0) 
+	{ 
+		return -1; 
+	}
 
 	// If no timeout was given, timeout immediately.
 	if (timeout == 0) 
@@ -135,7 +135,7 @@ int psp2link_disconnect(void)
 {
 
 	// Disconnect from the command port.
-	//if (network_disconnect(command_socket) < 0) { return -1; }
+	if (network_disconnect(command_socket) < 0) { return -1; }
 
 	// Disconnect from the request port.
 	if (network_disconnect(request_socket) < 0) 
@@ -158,19 +158,44 @@ int psp2link_disconnect(void)
 // PSP2LINK COMMAND FUNCTIONS //
 ////////////////////////////////
 
-//TODO
-//int psp2link_command_operation(void) 
-//{
-//	struct { unsigned int number; unsigned short length; } PACKED command;
+
+int psp2link_command_execelf(int argc, char **argv) {
+	struct { unsigned int number; unsigned short length; int argc; char argv[256]; } PACKED command;
 
 	// Build the command packet.
-//	command.number = htonl(PSP2LINK_COMMAND_OPERATION);
-//	command.length = htons(sizeof(command));
+	command.number = htonl(PSP2LINK_EXECELF_CMD);
+	command.length = htons(sizeof(command));
+	command.argc   = htonl(argc);
+	fix_argv(command.argv, argv);
 
 	// Send the command packet.
-//	return network_send(command_socket, &command, sizeof(command));
+	return network_send(command_socket, &command, sizeof(command));
 
-//}
+}
+ 
+int psp2link_command_execsprx(int argc, char **argv) {
+	struct { unsigned int number; unsigned short length; int argc; char argv[256]; } PACKED command;
+
+	// Build the command packet.
+	command.number = htonl(PSP2LINK_EXECSPRX_CMD);
+	command.length = htons(sizeof(command));
+	command.argc   = htonl(argc);
+	fix_argv(command.argv, argv);
+
+	// Send the command packet.
+	return network_send(command_socket, &command, sizeof(command));
+}
+
+int psp2link_command_exit(void) {
+	struct { unsigned int number; unsigned short length; int argc; char argv[256]; } PACKED command;
+
+	// Build the command packet.
+	command.number = htonl(PSP2LINK_EXIT_CMD);
+	command.length = htons(sizeof(command));
+	
+	// Send the command packet.
+	return network_send(command_socket, &command, sizeof(command));
+}
 
 ////////////////////////////////
 // PSP2LINK REQUEST FUNCTIONS //
