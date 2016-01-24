@@ -14,7 +14,7 @@
 #define __PSP2LINK_H__
 
 ///////////////////////
-// PS2LINK FUNCTIONS //
+// PSP2LINK FUNCTIONS //
 ///////////////////////
 
 int psp2link_connect(char *hostname);
@@ -23,19 +23,23 @@ int psp2link_mainloop(int timeout);
 
 int psp2link_disconnect(void);
 
-int psp2link_command_execelf(int argc, char **argv);
-int psp2link_command_execsprx(int argc, char **argv);
-int psp2link_command_exit(void);
 
-///////////////////////////////
-// PS2LINK COMMAND FUNCTIONS //
-///////////////////////////////
+////////////////////////////////
+// PSP2LINK COMMAND FUNCTIONS //
+////////////////////////////////
 
 #define PSP2LINK_EXECELF_CMD		0xBABE0201
 #define PSP2LINK_EXECSPRX_CMD		0xBABE0202
 #define PSP2LINK_EXIT_CMD			0xBABE0203
 
+int psp2link_command_execelf(int argc, char **argv);
+int psp2link_command_execsprx(int argc, char **argv);
+int psp2link_command_exit(void);
 
+
+/////////////////////////////////
+// PSP2LINK REQUESTS FUNCTIONS //
+/////////////////////////////////
 
 
 #define PSP2LINK_REQUEST_OPEN		0xBABE0111

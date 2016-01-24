@@ -3,16 +3,19 @@
   CC = gcc 
 
 
-  CFLAGS = -std=gnu99 -Wall -pedantic -I/usr/include -I/usr/local/include
 
   ifeq "x$(MSYSTEM)" "x"
    LIBS = -lpthread
   else
    LIBS = -lwsock32 -lpthreadGC2
+   FIX  = -mno-ms-bitfields 
+
   endif
   
+  CFLAGS = -std=gnu99 -Wall -pedantic -I/usr/include -I/usr/local/include $(FIX)
+  
   ifeq "x$(PREFIX)" "x"
-   PREFIX = $(PSP2SDK)
+   PREFIX = $(VITASDK)
   endif
 
   all: bin/psp2client

@@ -31,6 +31,15 @@ PSP2CLIENT FOR PC/MAC
   psp2client -h ipofyourvita listen 
   ```
   
+  To check command functionality, command thread on vita is listening and you can call with
+  ```
+  psp2client -h ipofyourvita -t 5 execelf README.md 
+  ```
+  
+  ```
+  psp2client -h ipofyourvita -t 5 exit
+  ```
+  
  
  You will see logs in terminal window output from your PlayStation Vita using libdebugnet udp log feauture and you can browse over folder in your hard disk.
  
@@ -38,64 +47,94 @@ PSP2CLIENT FOR PC/MAC
  
  ```
  ./psp2client -h yourvitaip listen
- [INFO]: Client connected from xxx.xxx.xxx.xxx port: 30915
-  [INFO]: sock psp2link_fileio set 50 connected 1
- [INFO]: Waiting for connection
- [INFO]: psp2link connected  1
- [DEBUG]: dir open req (host0:/usr/local)
- aqui
- [DEBUG]: dir open reply received (ret 0)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 1)
- [DEBUG]: dir read req (0)
- [DEBUG]: dir read reply received (ret 0)
- [DEBUG]: psp2link_file: dir close req (fd: 0)
- [DEBUG]: dir close reply received (ret 0)
+ waiting psp2...
+ error connecting
+ debugnet initialized
+ Copyright (C) 2010,2015 Antonio Jose Ramos Marquez aka bigboss @psxdev
+ This Program is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ ready to have a lot of fun...
+ [DEBUG]: [PSP2LINK] Server request thread UID: 0x4001058F
+ [DEBUG]: [PSP2LINK] Created psp2link_requests_sock: 65
+ [INFO]: [PSP2LINK] Waiting for connection
+ [DEBUG]: Server command thread UID: 0x40010591
+ [DEBUG]: Test debug level 1
+ [DEBUG]: [PSP2LINK] Command Thread Started.
+ [DEBUG]: [PSP2LINK] Created psp2link_commands_sock: 66
+ [DEBUG]: [PSP2LINK] Command listener waiting for commands...
+ waiting psp2...
+ [INFO]: [PSP2LINK] Client connected from ip port: 44543
+ [ERROR]: [PSP2LINK] Client reconnected
+ [INFO]: [PSP2LINK] sock psp2link_fileio set 67 connected 1
+ [INFO]: [PSP2LINK] Waiting for connection
+ [INFO]: [PSP2LINK] psp2link connected  1
+ [DEBUG]: [PSP2LINK] dir open req (host0:/usr/local/vitadev)
+ waiting psp2...
+ [DEBUG]: [PSP2LINK] dir open reply received (ret 0)
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1)
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1)
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1) 
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1)
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1)
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1)
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1)
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1)
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1)
+ [DEBUG]: [PSP2LINK] dir read req (0)
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 1)
+ [DEBUG]: [PSP2LINK] dir read req (0) 
+ [DEBUG]: [PSP2LINK] dir read reply received (ret 0)
+ [DEBUG]: [PSP2LINK] psp2link_file: dir close req (fd: 0)
+ [DEBUG]: [PSP2LINK] dir close reply received (ret 0)
  ```
  
+ For command execution:
+ 
+ ```
+ psp2client -t 5 execelf README.md
+ [INFO]: [PSP2LINK] Client connected from 192.168.1.3 port: 192
+ [ERROR]: [PSP2LINK] Client reconnected
+ [INFO]: [PSP2LINK] sock psp2link_fileio set 86 connected 1
+ [INFO]: [PSP2LINK] Waiting for connection
+ [DEBUG]: [PSP2LINK] commands listener received packet size (266)
+ [DEBUG]: [PSP2LINK] Received command execelf argc=1 argv=host0:README.md
+ [DEBUG]: [PSP2LINK] file open req (host0:README.md, 1 0)
+ Opening README.md flags 0
+ Open return 5
+ [DEBUG]: [PSP2LINK] file open reply received (ret 5)
+ [DEBUG]: [PSP2LINK] file lseek req (fd: 5)
+ 3382 result of lseek 0 offset 2 whence
+ [DEBUG]: [PSP2LINK] psp2link_lseek_file: lseek reply received (ret 3382)
+ [DEBUG]: [PSP2LINK] file lseek req (fd: 5)
+ 0 result of lseek 0 offset 0 whence
+ [DEBUG]: [PSP2LINK] psp2link_lseek_file: lseek reply received (ret 0)
+ [DEBUG]: [PSP2LINK] psp2link_read_file: Reply said there's 3382 bytes to read (wanted 3382)
+ [DEBUG]: [PSP2LINK] psp2link_file: file close req (fd: 5)
+ [DEBUG]: [PSP2LINK] psp2link_close_file: close reply received (ret 0)
+ [DEBUG]: [PSP2LINK] commands listener waiting for next command
+ 
+ ```
  3) ready to have a lot of fun :P
  
+
 ===================
  What next?
 ===================
-  
-  Add windows support, by now i have not free time to do it if someone want to add it contact with me.
+ Add new commands. Finally run fine on all unix flavours and windows :P
+===================
+ Changelog
+===================
+  - 24/01/2016 fix windows support 
   
   
 ===========================

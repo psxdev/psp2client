@@ -17,13 +17,14 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/stat.h>
-#include <pthread.h>
 #ifndef _WIN32
 #include <netinet/in.h>
 #else
+#define HAVE_STRUCT_TIMESPEC
 #include <windows.h>
 #define sleep(x) Sleep(x * 1000)
 #endif
+#include <pthread.h>
 
 #include "network.h"
 #include "psp2link.h"
@@ -226,6 +227,7 @@ int psp2link_request_open(void *packet)
 		result = open(request->pathname, request->flags, 0644);
 #endif
 	}
+	
 
 	// Send the response.
 	printf("Open return %d\n",result);
@@ -390,7 +392,7 @@ int psp2link_request_opendir(void *packet)
 		}
 		
 	}
-
+	
 	// Send the response.
 	return psp2link_response_opendir(result);
 }
@@ -416,14 +418,14 @@ int psp2link_request_closedir(void *packet)
 	return psp2link_response_closedir(result);
 
 }
-
 int psp2link_request_readdir(void *packet) 
 {
 	DIR *dir;
 	struct { unsigned int number; unsigned short length; int dd; } PACKED *request = packet;
 	struct dirent *dirent; 
 	struct stat stats; 
-	struct tm loctime;
+
+	struct tm *loctime;
 	unsigned int mode; 
 	
 	unsigned short ctime[8]; 
@@ -431,7 +433,7 @@ int psp2link_request_readdir(void *packet)
 	unsigned short mtime[8];
 	
 	char tname[512];
-
+	loctime=(struct tm *) malloc(sizeof(struct tm));
 	dir = psp2link_dd[ntohl(request->dd)].dir;
 
 	// Perform the request.
@@ -459,12 +461,12 @@ int psp2link_request_readdir(void *packet)
 	{ 
 		mode |= 0x1000;//0x20; 
 	}
-#ifndef _WIN32
+	#ifndef _WIN32
 	if (S_ISLNK(stats.st_mode)) 
 	{ 
 		mode |= 0x4000; //0x08; 
 	}
-#endif
+	#endif
 	if (S_ISREG(stats.st_mode)) 
 	{ 
 		mode |= 0x2000;//0x10; 
@@ -473,33 +475,46 @@ int psp2link_request_readdir(void *packet)
 	
 	
 	// Convert the creation time.
-	localtime_r(&(stats.st_ctime), &loctime);
-	ctime[6] = (unsigned short)(loctime.tm_year+1900);
-	ctime[5] = (unsigned short)(loctime.tm_mon + 1);
-	ctime[4] = (unsigned short)loctime.tm_mday;
-	ctime[3] = (unsigned short)loctime.tm_hour;
-	ctime[2] = (unsigned short)loctime.tm_min;
-	ctime[1] = (unsigned short)loctime.tm_sec;
+	#ifndef _WIN32
+	localtime_r(&(stats.st_ctime), loctime);
+	#else
+  	loctime=localtime(&(stats.st_ctime));
+	#endif
+	ctime[6] = (unsigned short)(loctime->tm_year+1900);
+	ctime[5] = (unsigned short)(loctime->tm_mon + 1);
+	ctime[4] = (unsigned short)loctime->tm_mday;
+	ctime[3] = (unsigned short)loctime->tm_hour;
+	ctime[2] = (unsigned short)loctime->tm_min;
+	ctime[1] = (unsigned short)loctime->tm_sec;
 	
 
 	// Convert the access time.
-	localtime_r(&(stats.st_atime), &loctime);
-	atime[6] = (unsigned short)(loctime.tm_year+1900);
-	atime[5] = (unsigned short)(loctime.tm_mon + 1);
-	atime[4] = (unsigned short)loctime.tm_mday;
-	atime[3] = (unsigned short)loctime.tm_hour;
-	atime[2] = (unsigned short)loctime.tm_min;
-	atime[1] = (unsigned short)loctime.tm_sec;
+	#ifndef _WIN32
+	localtime_r(&(stats.st_atime), loctime);
+	#else
+	loctime=localtime(&(stats.st_atime));
+	#endif
+	atime[6] = (unsigned short)(loctime->tm_year+1900);
+	atime[5] = (unsigned short)(loctime->tm_mon + 1);
+	atime[4] = (unsigned short)loctime->tm_mday;
+	atime[3] = (unsigned short)loctime->tm_hour;
+	atime[2] = (unsigned short)loctime->tm_min;
+	atime[1] = (unsigned short)loctime->tm_sec;
 
 	// Convert the last modified time.
-	localtime_r(&(stats.st_mtime), &loctime);
-	mtime[6] = (unsigned short)(loctime.tm_year+1900);
-	mtime[5] = (unsigned short)(loctime.tm_mon + 1);
-	mtime[4] = (unsigned short)loctime.tm_mday;
-	mtime[3] = (unsigned short)loctime.tm_hour;
-	mtime[2] = (unsigned short)loctime.tm_min;
-	mtime[1] = (unsigned short)loctime.tm_sec;
-
+	#ifndef _WIN32
+	localtime_r(&(stats.st_mtime), loctime);
+	#else
+	loctime=localtime(&(stats.st_mtime));
+	#endif
+	mtime[6] = (unsigned short)(loctime->tm_year+1900);
+	mtime[5] = (unsigned short)(loctime->tm_mon + 1);
+	mtime[4] = (unsigned short)loctime->tm_mday;
+	mtime[3] = (unsigned short)loctime->tm_hour;
+	mtime[2] = (unsigned short)loctime->tm_min;
+	mtime[1] = (unsigned short)loctime->tm_sec;
+	
+	free(loctime);
   
 	// Send the response.
 	return psp2link_response_readdir(1, mode, 0, stats.st_size, ctime, atime, mtime, dirent->d_name);
@@ -570,7 +585,7 @@ int psp2link_response_open(int result)
 	response.number = htonl(PSP2LINK_RESPONSE_OPEN);
 	response.length = htons(sizeof(response));
 	response.result = htonl(result);
-
+    
 	// Send the response packet.
 	return network_send(request_socket, &response, sizeof(response));
 }

@@ -81,13 +81,21 @@ int fix_argv(char *destination, char **argv)
 
 	// For each argv...
 	for (loop0=0; argv[loop0]; loop0++) {
-
+		if(loop0==0)
+		{
+			arg_prepend_host(destination,  argv[loop0]); 
+			destination += strlen(destination);
+			
+		}
+		else
+		{
 		// Copy the argv to the destination.
 		memcpy(destination, argv[loop0], strlen(argv[loop0]));
-
+		
+		
 		// Increment the destination pointer.
 		destination += strlen(argv[loop0]);
-
+		}
 		// Null-terminate the argv.
 		*destination = 0;
 
@@ -101,6 +109,31 @@ int fix_argv(char *destination, char **argv)
 
 }
 
+void arg_prepend_host(char *new, char *old) 
+{
+	char *pstr_ptr;
+	if ((pstr_ptr = strstr(old, ":/")) != NULL ) 
+	{
+		(void)strcpy(new, old);
+	} 
+	else if ((pstr_ptr = strstr(old, "host0:")) != NULL ) 
+	{
+		pstr_ptr = strstr(pstr_ptr, ":");
+		++pstr_ptr;
+ 	   (void)strcpy(new, "host0:");
+	   (void)strcat(new, pstr_ptr);
+	} 
+	else if ((pstr_ptr = strstr(old, ":")) != NULL ) 
+	{
+		(void)strcpy(new, old);
+	} 
+	else 
+	{
+		(void)strcpy(new, "host0:");
+		(void)strcat(new, old);
+	}
+}
+
 int print_usage(void) 
 {
 
@@ -108,8 +141,9 @@ int print_usage(void)
 	printf("\n");
 	printf(" Usage: psp2client [-h hostname] [-t timeout] <command> [arguments]\n\n");
 	printf(" Available commands:\n\n");
-	printf("   reset\n");
-	printf("   execpsp2 <filename> [arguments]\n");
+	printf("   exit\n");
+	printf("   execelf <filename> [arguments]\n");
+	printf("   execsprx <filename> [arguments]\n");
 	printf("   listen\n\n");
 
 	// End function.

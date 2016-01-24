@@ -22,7 +22,7 @@
 #endif
 
 
-
+//change to your vita ip
 char hostname[256] = { "192.168.1.37" };
 
 int timeout = -1;
@@ -97,9 +97,14 @@ int main(int argc, char **argv, char **env)
 		return -1; 
 	}
 	
-	if (strcmp(argv[-1], "execelf") == 0) { psp2link_command_execelf(argc, argv); } else
-	if (strcmp(argv[-1], "execsprx") == 0) { psp2link_command_execsprx(argc, argv); } else
-	if (strcmp(argv[-1], "exit") == 0) { psp2link_command_exit(); } else
+	if (strcmp(argv[-1], "execelf") == 0) { 
+		psp2link_command_execelf(argc, argv); 
+	} else
+	if (strcmp(argv[-1], "execsprx") == 0) { 
+		psp2link_command_execsprx(argc, argv); 
+	} else
+	if (strcmp(argv[-1], "exit") == 0) { psp2link_command_exit();
+	 } else
 	if (strcmp(argv[-1], "listen") == 0) { } else
 	// An unknown command was requested.
 	{ printf("Error: Unknown command requested. (%s)\n", argv[-1]); print_usage(); return -1; }

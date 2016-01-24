@@ -18,11 +18,13 @@
 // UTILITY FUNCTIONS //
 ///////////////////////
 
+
 int fix_flags(int flags);
-
 int fix_pathname(char *pathname);
-
 int fix_argv(char *destination, char **argv);
+void arg_prepend_host(char *new, char *old);
+
+
 
 int print_usage(void);
 
