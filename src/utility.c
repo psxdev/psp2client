@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "utility.h"
 
@@ -44,15 +45,32 @@ int fix_flags(int flags)
 	return result;
 
 }
+void win_to_unix(char *pathname)
+{
+	int loop0 = 0;
+	for (loop0=0; loop0<strlen(pathname); loop0++) { if (pathname[loop0] == '\\') { pathname[loop0] = '/'; } }
+	return;
+	
+}
 int fix_pathname(char *pathname) 
 { 
 	int loop0 = 0;
 	char *token;
+
+	
 	// If empty, set a pathname default.
-	if (pathname[0] == 0) { strcpy(pathname, "."); }
+	if (pathname[0] == 0 || (strlen(pathname)==6 && strcmp(pathname,"host0:")==0 ) )
+	{ 
+		strcpy(pathname,"host0:");
+#if defined (__CYGWIN__) || defined (__MINGW32__)
+  		_getcwd(pathname+6,250);
+#else
+  		getcwd(pathname+6,250);
+#endif
+	}
 
 	// Convert \ to / for unix compatibility.
-	for (loop0=0; loop0<strlen(pathname); loop0++) { if (pathname[loop0] == '\\') { pathname[loop0] = '/'; } }
+	win_to_unix(pathname);
 
 	char *aux=strdup(pathname);
 	
@@ -60,6 +78,7 @@ int fix_pathname(char *pathname)
 	
 	if(strcmp(token,"host0")==0)
 	{
+		
 		for(loop0=0; loop0<strlen(pathname)-6; loop0++) { pathname[loop0] = pathname[loop0+6]; }
 		pathname[loop0] = 0;
 		

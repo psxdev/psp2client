@@ -23,6 +23,7 @@ int fix_flags(int flags);
 int fix_pathname(char *pathname);
 int fix_argv(char *destination, char **argv);
 void arg_prepend_host(char *new, char *old);
+void win_to_unix(char *pathname);
 
 
 

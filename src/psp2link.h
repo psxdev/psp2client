@@ -53,6 +53,12 @@ int psp2link_command_exit(void);
 #define PSP2LINK_REQUEST_REMOVE		0xBABE0191
 #define PSP2LINK_REQUEST_MKDIR		0xBABE01A1
 #define PSP2LINK_REQUEST_RMDIR		0xBABE01B1
+#define PSP2LINK_REQUEST_GETCWD		0xBABE01C1
+#define PSP2LINK_REQUEST_SETCWD		0xBABE01D1
+#define PSP2LINK_REQUEST_CHSTAT		0xBABE01E1
+#define PSP2LINK_REQUEST_GETSTAT	0xBABE01F1
+#define PSP2LINK_REQUEST_RENAME		0xBABE0211
+
 
 int psp2link_request_open(void *packet);
 
@@ -76,6 +82,11 @@ int psp2link_request_mkdir(void *packet);
 
 int psp2link_request_rmdir(void *packet);
 
+int psp2link_request_getcwd(void *packet);
+
+int psp2link_request_setcwd(void *packet);
+
+
 ////////////////////////////////
 // PS2LINK RESPONSE FUNCTIONS //
 ////////////////////////////////
@@ -91,6 +102,11 @@ int psp2link_request_rmdir(void *packet);
 #define PSP2LINK_RESPONSE_REMOVE	0xBABE0192
 #define PSP2LINK_RESPONSE_MKDIR		0xBABE01A2
 #define PSP2LINK_RESPONSE_RMDIR		0xBABE01B2
+#define PSP2LINK_RESPONSE_GETCWD	0xBABE01C2
+#define PSP2LINK_RESPONSE_SETCWD	0xBABE01D2
+#define PSP2LINK_RESPONSE_CHSTAT	0xBABE01E2
+#define PSP2LINK_RESPONSE_GETSTAT	0xBABE01F2
+#define PSP2LINK_RESPONSE_RENAME	0xBABE0212
 
 int psp2link_response_open(int result);
 
@@ -113,6 +129,9 @@ int psp2link_response_remove(int result);
 int psp2link_response_mkdir(int result);
 
 int psp2link_response_rmdir(int result);
+int psp2link_response_getcwd(int result,char *name);
+int psp2link_response_setcwd(int result);
+
 
 //////////////////////////////
 // PSP2LINK THREAD FUNCTIONS //

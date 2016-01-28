@@ -201,7 +201,53 @@ int psp2link_command_exit(void) {
 ////////////////////////////////
 // PSP2LINK REQUEST FUNCTIONS //
 ////////////////////////////////
+int psp2link_request_getcwd(void *packet)
+{
+	int result = -1;
+	char cwd[256];
+#if defined (__CYGWIN__) || defined (__MINGW32__)
+  	if(_getcwd(cwd,256))
+#else
+  	if(getcwd(cwd,256))
+#endif
+	{
+		result=1;
+	}
 
+	// Send the response.
+	printf("getcwd return %d %s\n",result,cwd);
+	return psp2link_response_getcwd(result,cwd);
+}
+int psp2link_request_setcwd(void *packet)
+{
+	struct { unsigned int number; unsigned short length; char pathname[256]; } PACKED *request = packet;
+	int result = -1;
+	struct stat stats;
+
+	// Fix the arguments.
+	fix_pathname(request->pathname);
+	if(request->pathname[0]==0)
+	{
+		return psp2link_response_setcwd(-1);
+	}
+	printf("setcwd to %s\n",request->pathname);
+    
+	if((stat(request->pathname, &stats) == 0) && (S_ISDIR(stats.st_mode)))
+	{
+		// Perform the request.
+#if defined (__CYGWIN__) || defined (__MINGW32__)
+		result = _chdir(request->pathname);
+#else
+		result = chdir(request->pathname);
+#endif
+	}
+	
+
+	// Send the response.
+	printf("setcwd return %d\n",result);
+	return psp2link_response_setcwd(result);
+	
+}
 int psp2link_request_open(void *packet) 
 {
 	struct { unsigned int number; unsigned short length; int flags; char pathname[256]; } PACKED *request = packet;
@@ -577,6 +623,35 @@ int psp2link_request_rmdir(void *packet)
 // PSP2LINK RESPONSE FUNCTIONS //
 /////////////////////////////////
 
+int psp2link_response_getcwd(int result,char *name) 
+{
+	struct { unsigned int number; unsigned short length; int result; char name[256];  } PACKED response;
+
+	// Build the response packet.
+	response.number = htonl(PSP2LINK_RESPONSE_GETCWD);
+	response.length = htons(sizeof(response));
+	response.result = htonl(result);
+#if defined (__CYGWIN__) || defined (__MINGW32__)
+	win_to_unix(name);
+#endif
+	strcpy(response.name,"host0:");
+	strcat(response.name,name);
+
+	// Send the response packet.
+	return network_send(request_socket, &response, sizeof(response));
+}
+int psp2link_response_setcwd(int result) 
+{
+	struct { unsigned int number; unsigned short length; int result; } PACKED response;
+
+	// Build the response packet.
+	response.number = htonl(PSP2LINK_RESPONSE_SETCWD);
+	response.length = htons(sizeof(response));
+	response.result = htonl(result);
+    
+	// Send the response packet.
+	return network_send(request_socket, &response, sizeof(response));
+}
 int psp2link_response_open(int result) 
 {
 	struct { unsigned int number; unsigned short length; int result; } PACKED response;
@@ -862,6 +937,12 @@ void *psp2link_thread_request(void *thread_id)
 				break;   
 			case PSP2LINK_REQUEST_RMDIR:    
 				psp2link_request_rmdir(&packet);  
+				break;
+			case PSP2LINK_REQUEST_GETCWD:    
+				psp2link_request_getcwd(&packet);  
+				break;
+			case PSP2LINK_REQUEST_SETCWD:    
+				psp2link_request_setcwd(&packet);  
 				break;
 			default:
 				printf("Received unsupported request number\n");
