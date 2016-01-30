@@ -63,9 +63,9 @@ int fix_pathname(char *pathname)
 	{ 
 		strcpy(pathname,"host0:");
 #if defined (__CYGWIN__) || defined (__MINGW32__)
-  		_getcwd(pathname+6,250);
+  		_getcwd(pathname+6,PSP2LINK_MAX_PATH-6);
 #else
-  		getcwd(pathname+6,250);
+  		getcwd(pathname+6,PSP2LINK_MAX_PATH-6);
 #endif
 	}
 

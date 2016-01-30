@@ -13,6 +13,7 @@
 #define __UTILITY_H__
 
 #define PACKED __attribute__((packed))
+#define PSP2LINK_MAX_PATH 1024
 
 ///////////////////////
 // UTILITY FUNCTIONS //

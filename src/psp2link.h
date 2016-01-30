@@ -13,6 +13,7 @@
 #ifndef __PSP2LINK_H__
 #define __PSP2LINK_H__
 
+
 ///////////////////////
 // PSP2LINK FUNCTIONS //
 ///////////////////////
@@ -57,7 +58,8 @@ int psp2link_command_exit(void);
 #define PSP2LINK_REQUEST_SETCWD		0xBABE01D1
 #define PSP2LINK_REQUEST_CHSTAT		0xBABE01E1
 #define PSP2LINK_REQUEST_GETSTAT	0xBABE01F1
-#define PSP2LINK_REQUEST_RENAME		0xBABE0211
+#define PSP2LINK_REQUEST_FGETSTAT	0xBABE0211
+#define PSP2LINK_REQUEST_RENAME		0xBABE0221
 
 
 int psp2link_request_open(void *packet);
@@ -86,6 +88,13 @@ int psp2link_request_getcwd(void *packet);
 
 int psp2link_request_setcwd(void *packet);
 
+int psp2link_request_getstat(void *packet);
+
+int psp2link_request_chstat(void *packet);
+
+int psp2link_request_fgetstat(void *packet);
+
+int psp2link_request_rename(void *packet);
 
 ////////////////////////////////
 // PS2LINK RESPONSE FUNCTIONS //
@@ -106,7 +115,8 @@ int psp2link_request_setcwd(void *packet);
 #define PSP2LINK_RESPONSE_SETCWD	0xBABE01D2
 #define PSP2LINK_RESPONSE_CHSTAT	0xBABE01E2
 #define PSP2LINK_RESPONSE_GETSTAT	0xBABE01F2
-#define PSP2LINK_RESPONSE_RENAME	0xBABE0212
+#define PSP2LINK_RESPONSE_FGETSTAT	0xBABE0212
+#define PSP2LINK_RESPONSE_RENAME	0xBABE0222
 
 int psp2link_response_open(int result);
 
@@ -129,8 +139,18 @@ int psp2link_response_remove(int result);
 int psp2link_response_mkdir(int result);
 
 int psp2link_response_rmdir(int result);
+
 int psp2link_response_getcwd(int result,char *name);
+
 int psp2link_response_setcwd(int result);
+
+int psp2link_response_getstat(int result, unsigned int mode, unsigned int attr, unsigned int size, unsigned short *ctime, unsigned short *atime, unsigned short *mtime);
+
+int psp2link_response_chstat(int result, unsigned int mode, unsigned int attr, unsigned int size, unsigned short *ctime, unsigned short *atime, unsigned short *mtime);
+
+int psp2link_response_fgetstat(int result, unsigned int mode, unsigned int attr, unsigned int size, unsigned short *ctime, unsigned short *atime, unsigned short *mtime);
+
+int psp2link_response_rename(int result);
 
 
 //////////////////////////////

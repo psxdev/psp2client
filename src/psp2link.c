@@ -204,11 +204,11 @@ int psp2link_command_exit(void) {
 int psp2link_request_getcwd(void *packet)
 {
 	int result = -1;
-	char cwd[256];
+	char cwd[PSP2LINK_MAX_PATH];
 #if defined (__CYGWIN__) || defined (__MINGW32__)
-  	if(_getcwd(cwd,256))
+  	if(_getcwd(cwd,PSP2LINK_MAX_PATH))
 #else
-  	if(getcwd(cwd,256))
+  	if(getcwd(cwd,PSP2LINK_MAX_PATH))
 #endif
 	{
 		result=1;
@@ -220,8 +220,13 @@ int psp2link_request_getcwd(void *packet)
 }
 int psp2link_request_setcwd(void *packet)
 {
-	struct { unsigned int number; unsigned short length; char pathname[256]; } PACKED *request = packet;
+	
+	//FEATURE DISABLED If you want a custom working directory run psp2client from there by now some weird bug detected
+	
+	
+	//struct { unsigned int number; unsigned short length; char pathname[PSP2LINK_MAX_PATH]; } PACKED *request = packet;
 	int result = -1;
+	/*
 	struct stat stats;
 
 	// Fix the arguments.
@@ -240,7 +245,7 @@ int psp2link_request_setcwd(void *packet)
 #else
 		result = chdir(request->pathname);
 #endif
-	}
+	}*/
 	
 
 	// Send the response.
@@ -248,9 +253,319 @@ int psp2link_request_setcwd(void *packet)
 	return psp2link_response_setcwd(result);
 	
 }
+int psp2link_request_getstat(void *packet)
+{
+	struct { unsigned int number; unsigned short length; char pathname[PSP2LINK_MAX_PATH]; } PACKED *request = packet;
+	struct stat stats; 
+	int result=-1;
+	struct tm *loctime;
+	unsigned int mode; 
+	unsigned short ctime[8]; 
+	unsigned short atime[8];
+	unsigned short mtime[8];
+	
+	loctime=(struct tm *) malloc(sizeof(struct tm));
+	fix_pathname(request->pathname);
+	
+
+	// Fetch the entry's statistics.
+	if((stat(request->pathname, &stats))!=0)
+	{
+		return psp2link_response_getstat(result, 0, 0, 0, NULL, NULL, NULL);
+	}
+	result=0;
+	// Convert the mode/attr
+	mode = (stats.st_mode& 0xFFF);//0x01FF);//0x07);
+	//printf("mode %x st_mode %04o\n",mode,stats.st_mode);
+	if (S_ISDIR(stats.st_mode)) 
+	{ 
+		mode |= 0x1000;//0x20;
+	}
+	#ifndef _WIN32
+	if (S_ISLNK(stats.st_mode)) 
+	{ 
+		mode |= 0x4000; //0x08;
+	}
+	#endif
+	if (S_ISREG(stats.st_mode)) 
+	{ 
+		mode |= 0x2000;//0x10; 
+	}
+
+	
+	
+	// Convert the creation time.
+	#ifndef _WIN32
+	localtime_r(&(stats.st_ctime), loctime);
+	#else
+  	loctime=localtime(&(stats.st_ctime));
+	#endif
+	ctime[6] = (unsigned short)(loctime->tm_year+1900);
+	ctime[5] = (unsigned short)(loctime->tm_mon + 1);
+	ctime[4] = (unsigned short)loctime->tm_mday;
+	ctime[3] = (unsigned short)loctime->tm_hour;
+	ctime[2] = (unsigned short)loctime->tm_min;
+	ctime[1] = (unsigned short)loctime->tm_sec;
+	
+
+	// Convert the access time.
+	#ifndef _WIN32
+	localtime_r(&(stats.st_atime), loctime);
+	#else
+	loctime=localtime(&(stats.st_atime));
+	#endif
+	atime[6] = (unsigned short)(loctime->tm_year+1900);
+	atime[5] = (unsigned short)(loctime->tm_mon + 1);
+	atime[4] = (unsigned short)loctime->tm_mday;
+	atime[3] = (unsigned short)loctime->tm_hour;
+	atime[2] = (unsigned short)loctime->tm_min;
+	atime[1] = (unsigned short)loctime->tm_sec;
+
+	// Convert the last modified time.
+	#ifndef _WIN32
+	localtime_r(&(stats.st_mtime), loctime);
+	#else
+	loctime=localtime(&(stats.st_mtime));
+	#endif
+	mtime[6] = (unsigned short)(loctime->tm_year+1900);
+	mtime[5] = (unsigned short)(loctime->tm_mon + 1);
+	mtime[4] = (unsigned short)loctime->tm_mday;
+	mtime[3] = (unsigned short)loctime->tm_hour;
+	mtime[2] = (unsigned short)loctime->tm_min;
+	mtime[1] = (unsigned short)loctime->tm_sec;
+	
+	free(loctime);
+  
+	// Send the response.
+	return psp2link_response_getstat(result, mode, 0, stats.st_size, ctime, atime, mtime);
+	
+}
+int psp2link_request_chstat(void *packet)
+{
+
+	struct { unsigned int number; unsigned short length; char pathname[PSP2LINK_MAX_PATH]; unsigned int mode; } PACKED *request = packet;
+	struct stat stats; 
+	int result=-1;
+	struct tm *loctime;
+	unsigned int mode; 
+	unsigned short ctime[8]; 
+	unsigned short atime[8];
+	unsigned short mtime[8];
+	
+	loctime=(struct tm *) malloc(sizeof(struct tm));
+	fix_pathname(request->pathname);
+	
+	// Fetch the entry's statistics.
+	if((stat(request->pathname, &stats))!=0)
+	{
+		return psp2link_response_chstat(result, 0, 0, 0, NULL, NULL, NULL);
+	}
+	
+	// Convert the mode/
+
+	if(chmod(request->pathname,(stats.st_mode&0xFE00)|(request->mode&0x1FF))!=0)
+	{
+		return psp2link_response_chstat(result, 0, 0, 0, NULL, NULL, NULL);
+		
+	}
+	if((stat(request->pathname, &stats))!=0)
+	{
+		return psp2link_response_chstat(result, 0, 0, 0, NULL, NULL, NULL);
+	}
+	result=0;
+	
+	mode = (stats.st_mode& 0xFFF);//0x01FF);//0x07);
+	//printf("mode %x st_mode %04o\n",mode,stats.st_mode);
+	if (S_ISDIR(stats.st_mode)) 
+	{ 
+		mode |= 0x1000;//0x20;
+	}
+	#ifndef _WIN32
+	if (S_ISLNK(stats.st_mode)) 
+	{ 
+		mode |= 0x4000; //0x08;
+	}
+	#endif
+	if (S_ISREG(stats.st_mode)) 
+	{ 
+		mode |= 0x2000;//0x10; 
+	}
+
+	
+	
+	// Convert the creation time.
+	#ifndef _WIN32
+	localtime_r(&(stats.st_ctime), loctime);
+	#else
+  	loctime=localtime(&(stats.st_ctime));
+	#endif
+	ctime[6] = (unsigned short)(loctime->tm_year+1900);
+	ctime[5] = (unsigned short)(loctime->tm_mon + 1);
+	ctime[4] = (unsigned short)loctime->tm_mday;
+	ctime[3] = (unsigned short)loctime->tm_hour;
+	ctime[2] = (unsigned short)loctime->tm_min;
+	ctime[1] = (unsigned short)loctime->tm_sec;
+	
+
+	// Convert the access time.
+	#ifndef _WIN32
+	localtime_r(&(stats.st_atime), loctime);
+	#else
+	loctime=localtime(&(stats.st_atime));
+	#endif
+	atime[6] = (unsigned short)(loctime->tm_year+1900);
+	atime[5] = (unsigned short)(loctime->tm_mon + 1);
+	atime[4] = (unsigned short)loctime->tm_mday;
+	atime[3] = (unsigned short)loctime->tm_hour;
+	atime[2] = (unsigned short)loctime->tm_min;
+	atime[1] = (unsigned short)loctime->tm_sec;
+
+	// Convert the last modified time.
+	#ifndef _WIN32
+	localtime_r(&(stats.st_mtime), loctime);
+	#else
+	loctime=localtime(&(stats.st_mtime));
+	#endif
+	mtime[6] = (unsigned short)(loctime->tm_year+1900);
+	mtime[5] = (unsigned short)(loctime->tm_mon + 1);
+	mtime[4] = (unsigned short)loctime->tm_mday;
+	mtime[3] = (unsigned short)loctime->tm_hour;
+	mtime[2] = (unsigned short)loctime->tm_min;
+	mtime[1] = (unsigned short)loctime->tm_sec;
+	
+	free(loctime);
+  
+	// Send the response.
+	return psp2link_response_chstat(result, mode, 0, stats.st_size, ctime, atime, mtime);
+	
+	
+}
+int psp2link_request_fgetstat(void *packet)
+{
+	struct { unsigned int number; unsigned short length; int fd; } PACKED *request = packet;
+	struct stat stats; 
+	int result=-1;
+	struct tm *loctime;
+	unsigned int mode; 
+	unsigned short ctime[8]; 
+	unsigned short atime[8];
+	unsigned short mtime[8];
+	int ret;
+	loctime=(struct tm *) malloc(sizeof(struct tm));
+	
+    if(ntohl(request->fd)<10)//we are using our own index for directories from 0 to 9 see psp2link_dd structure
+	{
+		//fd=dirfd(psp2link_dd[ntohl(request->fd)].dir); don't like it so better with stat for directories
+		ret=stat(psp2link_dd[ntohl(request->fd)].pathname,&stats);	
+	}
+	else
+	{
+		ret=fstat(ntohl(request->fd), &stats);
+	}
+	// Fetch the entry's statistics.
+	if(ret!=0)
+	{
+		return psp2link_response_fgetstat(result, 0, 0, 0, NULL, NULL, NULL);
+	}
+	result=0;
+	// Convert the mode/attr
+	mode = (stats.st_mode& 0xFFF);//0x01FF);//0x07);
+	//printf("mode %x st_mode %04o\n",mode,stats.st_mode);
+	if (S_ISDIR(stats.st_mode)) 
+	{ 
+		mode |= 0x1000;//0x20;
+	}
+	#ifndef _WIN32
+	if (S_ISLNK(stats.st_mode)) 
+	{ 
+		mode |= 0x4000; //0x08;
+	}
+	#endif
+	if (S_ISREG(stats.st_mode)) 
+	{ 
+		mode |= 0x2000;//0x10; 
+	}
+
+	
+	
+	// Convert the creation time.
+	#ifndef _WIN32
+	localtime_r(&(stats.st_ctime), loctime);
+	#else
+  	loctime=localtime(&(stats.st_ctime));
+	#endif
+	ctime[6] = (unsigned short)(loctime->tm_year+1900);
+	ctime[5] = (unsigned short)(loctime->tm_mon + 1);
+	ctime[4] = (unsigned short)loctime->tm_mday;
+	ctime[3] = (unsigned short)loctime->tm_hour;
+	ctime[2] = (unsigned short)loctime->tm_min;
+	ctime[1] = (unsigned short)loctime->tm_sec;
+	
+
+	// Convert the access time.
+	#ifndef _WIN32
+	localtime_r(&(stats.st_atime), loctime);
+	#else
+	loctime=localtime(&(stats.st_atime));
+	#endif
+	atime[6] = (unsigned short)(loctime->tm_year+1900);
+	atime[5] = (unsigned short)(loctime->tm_mon + 1);
+	atime[4] = (unsigned short)loctime->tm_mday;
+	atime[3] = (unsigned short)loctime->tm_hour;
+	atime[2] = (unsigned short)loctime->tm_min;
+	atime[1] = (unsigned short)loctime->tm_sec;
+
+	// Convert the last modified time.
+	#ifndef _WIN32
+	localtime_r(&(stats.st_mtime), loctime);
+	#else
+	loctime=localtime(&(stats.st_mtime));
+	#endif
+	mtime[6] = (unsigned short)(loctime->tm_year+1900);
+	mtime[5] = (unsigned short)(loctime->tm_mon + 1);
+	mtime[4] = (unsigned short)loctime->tm_mday;
+	mtime[3] = (unsigned short)loctime->tm_hour;
+	mtime[2] = (unsigned short)loctime->tm_min;
+	mtime[1] = (unsigned short)loctime->tm_sec;
+	
+	free(loctime);
+  
+	// Send the response.
+	return psp2link_response_fgetstat(result, mode, 0, stats.st_size, ctime, atime, mtime);
+	
+}
+int psp2link_request_rename(void *packet) 
+{
+	struct { unsigned int number; unsigned short length; char name[PSP2LINK_MAX_PATH]; char newname[PSP2LINK_MAX_PATH]; } PACKED *request = packet;
+	int result = -1;
+	struct stat stats;
+	struct stat statsnew;
+	
+	// Fix the arguments.
+	fix_pathname(request->name);
+	fix_pathname(request->newname);
+	printf("Original path %s newpath %s\n",request->name,request->newname);
+	
+	if(stat(request->name, &stats) != 0)
+	{
+		printf("Original path %s not found\n",request->name);
+		return psp2link_response_rename(result);
+	}
+	if(stat(request->newname, &statsnew) == 0)
+	{
+		printf("New path %s already exist\n",request->newname);
+		return psp2link_response_rename(result);
+	}
+	// Perform the request.
+	result = rename(request->name,request->newname);
+
+	// Send the response.
+	return psp2link_response_rename(result);
+}
+
 int psp2link_request_open(void *packet) 
 {
-	struct { unsigned int number; unsigned short length; int flags; char pathname[256]; } PACKED *request = packet;
+	struct { unsigned int number; unsigned short length; int flags; char pathname[PSP2LINK_MAX_PATH]; } PACKED *request = packet;
 	int result = -1;
 	struct stat stats;
 
@@ -405,7 +720,7 @@ int psp2link_request_lseek(void *packet)
 int psp2link_request_opendir(void *packet) 
 { 
 	int loop0 = 0;
-	struct { unsigned int command; unsigned short length; int flags; char pathname[256]; } PACKED *request = packet;
+	struct { unsigned int command; unsigned short length; int flags; char pathname[PSP2LINK_MAX_PATH]; } PACKED *request = packet;
 	int result = -1;
 	struct stat stats;
 
@@ -416,25 +731,26 @@ int psp2link_request_opendir(void *packet)
 		return psp2link_response_opendir(-1);
 
 	}
-
-	if((stat(request->pathname, &stats) == 0) && (S_ISDIR(stats.st_mode)))
+	if(stat(request->pathname, &stats) == 0) 
 	{
-		// Allocate an available directory descriptor.
-		for (loop0=0; loop0<10; loop0++) 
-		{ 
-			if (psp2link_dd[loop0].dir == NULL) 
-			{ 
-				result = loop0; 
-				break; 
-			} 
-		}
-
-		// Perform the request.
-		if (result != -1)
+		if(S_ISDIR(stats.st_mode))
 		{
-			psp2link_dd[result].pathname = (char *) malloc(strlen(request->pathname) + 1);
-			strcpy(psp2link_dd[result].pathname, request->pathname);
-			psp2link_dd[result].dir = opendir(request->pathname);
+			// Allocate an available directory descriptor.
+			for (loop0=0; loop0<10; loop0++) 
+			{ 
+				if (psp2link_dd[loop0].dir == NULL) 
+				{ 
+					result = loop0; 
+					break; 
+				} 
+			}
+			// Perform the request.
+			if (result != -1)
+			{
+				psp2link_dd[result].pathname = (char *) malloc(strlen(request->pathname) + 1);
+				strcpy(psp2link_dd[result].pathname, request->pathname);
+				psp2link_dd[result].dir = opendir(request->pathname);
+			}
 		}
 		
 	}
@@ -449,11 +765,11 @@ int psp2link_request_closedir(void *packet)
 	int result = -1;
 
 	// Perform the request.
-	result = closedir(psp2link_dd[ntohl(request->dd)].dir);
-
+	
+	result = closedir((DIR *)psp2link_dd[ntohl(request->dd)].dir);
 	if(psp2link_dd[ntohl(request->dd)].pathname)
 	{
-		free(psp2link_dd[ntohl(request->dd)].pathname);
+		free(psp2link_dd[ntohl(request->dd)].pathname);		
 		psp2link_dd[ntohl(request->dd)].pathname = NULL;
 	}
 
@@ -569,12 +885,16 @@ int psp2link_request_readdir(void *packet)
 
 int psp2link_request_remove(void *packet) 
 {
-	struct { unsigned int number; unsigned short length; char name[256]; } PACKED *request = packet;
+	struct { unsigned int number; unsigned short length; char name[PSP2LINK_MAX_PATH]; } PACKED *request = packet;
 	int result = -1;
-
+	struct stat stats;
 	// Fix the arguments.
 	fix_pathname(request->name);
-
+	if(stat(request->name,&stats)!=0)
+	{
+		printf("path %s to delete not found\n",request->name);
+		return psp2link_response_remove(result);
+	}
 	// Perform the request.
 	result = remove(request->name);
 
@@ -584,11 +904,16 @@ int psp2link_request_remove(void *packet)
 
 int psp2link_request_mkdir(void *packet) 
 {
-	struct { unsigned int number; unsigned short length; int mode; char name[256]; } PACKED *request = packet;
+	struct { unsigned int number; unsigned short length; int mode; char name[PSP2LINK_MAX_PATH]; } PACKED *request = packet;
 	int result = -1;
-
+	struct stat stats;
 	// Fix the arguments.
 	fix_pathname(request->name);
+	if(stat(request->name,&stats)==0)
+	{
+		printf("path %s already exist\n",request->name);
+		return psp2link_response_mkdir(result);
+	}
 	// request->flags = fix_flags(ntohl(request->flags));
 
 	// Perform the request.
@@ -606,12 +931,16 @@ int psp2link_request_mkdir(void *packet)
 
 int psp2link_request_rmdir(void *packet) 
 {
-	struct { unsigned int number; unsigned short length; char name[256]; } PACKED *request = packet;
+	struct { unsigned int number; unsigned short length; char name[PSP2LINK_MAX_PATH]; } PACKED *request = packet;
 	int result = -1;
-
+	struct stat stats;
 	// Fix the arguments.
 	fix_pathname(request->name);
-
+	if(stat(request->name,&stats)!=0)
+	{
+		printf("dir  %s to delete does not exist\n",request->name);
+		return psp2link_response_rmdir(result);
+	}
 	// Perform the request.
 	result = rmdir(request->name);
 
@@ -625,7 +954,7 @@ int psp2link_request_rmdir(void *packet)
 
 int psp2link_response_getcwd(int result,char *name) 
 {
-	struct { unsigned int number; unsigned short length; int result; char name[256];  } PACKED response;
+	struct { unsigned int number; unsigned short length; int result; char name[PSP2LINK_MAX_PATH];  } PACKED response;
 
 	// Build the response packet.
 	response.number = htonl(PSP2LINK_RESPONSE_GETCWD);
@@ -640,6 +969,7 @@ int psp2link_response_getcwd(int result,char *name)
 	// Send the response packet.
 	return network_send(request_socket, &response, sizeof(response));
 }
+
 int psp2link_response_setcwd(int result) 
 {
 	struct { unsigned int number; unsigned short length; int result; } PACKED response;
@@ -652,6 +982,163 @@ int psp2link_response_setcwd(int result)
 	// Send the response packet.
 	return network_send(request_socket, &response, sizeof(response));
 }
+int psp2link_response_getstat(int result, unsigned int mode, unsigned int attr, unsigned int size, unsigned short *ctime, unsigned short *atime, unsigned short *mtime) 
+{
+	
+	struct { unsigned int number; unsigned short length; int result; unsigned int mode; unsigned int attr; unsigned int size; unsigned short ctime[8]; unsigned short atime[8]; unsigned short mtime[8]; } PACKED response;
+
+	// Build the response packet.
+	response.number = htonl(PSP2LINK_RESPONSE_GETSTAT);
+	response.length = htons(sizeof(response));
+	response.result = htonl(result);
+	response.mode   = htonl(mode);
+	response.attr   = htonl(attr);
+	response.size   = htonl(size);
+	if(ctime)
+	{
+		response.ctime[0] = 0;
+		response.ctime[1] = htons(ctime[1]);
+		response.ctime[2] = htons(ctime[2]);
+		response.ctime[3] = htons(ctime[3]);
+		response.ctime[4] = htons(ctime[4]);
+		response.ctime[5] = htons(ctime[5]);
+		response.ctime[6] = htons(ctime[6]);
+	}
+	if(atime)
+	{
+		response.atime[0] = 0;
+		response.atime[1] = htons(atime[1]);
+		response.atime[2] = htons(atime[2]);
+		response.atime[3] = htons(atime[3]);
+		response.atime[4] = htons(atime[4]);
+		response.atime[5] = htons(atime[5]);
+		response.atime[6] = htons(atime[6]);
+	}
+	if(mtime)
+	{
+		response.mtime[0] = 0;
+		response.mtime[1] = htons(mtime[1]);
+		response.mtime[2] = htons(mtime[2]);
+		response.mtime[3] = htons(mtime[3]);
+		response.mtime[4] = htons(mtime[4]);
+		response.mtime[5] = htons(mtime[5]);
+		response.mtime[6] = htons(mtime[6]);
+	}
+	
+  	
+	// Send the response packet.
+	return network_send(request_socket, &response, sizeof(response));
+
+}
+int psp2link_response_chstat(int result, unsigned int mode, unsigned int attr, unsigned int size, unsigned short *ctime, unsigned short *atime, unsigned short *mtime) 
+{
+	
+	struct { unsigned int number; unsigned short length; int result; unsigned int mode; unsigned int attr; unsigned int size; unsigned short ctime[8]; unsigned short atime[8]; unsigned short mtime[8]; } PACKED response;
+
+	// Build the response packet.
+	response.number = htonl(PSP2LINK_RESPONSE_CHSTAT);
+	response.length = htons(sizeof(response));
+	response.result = htonl(result);
+	response.mode   = htonl(mode);
+	response.attr   = htonl(attr);
+	response.size   = htonl(size);
+	if(ctime)
+	{
+		response.ctime[0] = 0;
+		response.ctime[1] = htons(ctime[1]);
+		response.ctime[2] = htons(ctime[2]);
+		response.ctime[3] = htons(ctime[3]);
+		response.ctime[4] = htons(ctime[4]);
+		response.ctime[5] = htons(ctime[5]);
+		response.ctime[6] = htons(ctime[6]);
+	}
+	if(atime)
+	{
+		response.atime[0] = 0;
+		response.atime[1] = htons(atime[1]);
+		response.atime[2] = htons(atime[2]);
+		response.atime[3] = htons(atime[3]);
+		response.atime[4] = htons(atime[4]);
+		response.atime[5] = htons(atime[5]);
+		response.atime[6] = htons(atime[6]);
+	}
+	if(mtime)
+	{
+		response.mtime[0] = 0;
+		response.mtime[1] = htons(mtime[1]);
+		response.mtime[2] = htons(mtime[2]);
+		response.mtime[3] = htons(mtime[3]);
+		response.mtime[4] = htons(mtime[4]);
+		response.mtime[5] = htons(mtime[5]);
+		response.mtime[6] = htons(mtime[6]);
+	}
+	
+  	
+	// Send the response packet.
+	return network_send(request_socket, &response, sizeof(response));
+
+}
+int psp2link_response_fgetstat(int result, unsigned int mode, unsigned int attr, unsigned int size, unsigned short *ctime, unsigned short *atime, unsigned short *mtime) 
+{
+	
+	struct { unsigned int number; unsigned short length; int result; unsigned int mode; unsigned int attr; unsigned int size; unsigned short ctime[8]; unsigned short atime[8]; unsigned short mtime[8]; } PACKED response;
+
+	// Build the response packet.
+	response.number = htonl(PSP2LINK_RESPONSE_FGETSTAT);
+	response.length = htons(sizeof(response));
+	response.result = htonl(result);
+	response.mode   = htonl(mode);
+	response.attr   = htonl(attr);
+	response.size   = htonl(size);
+	if(ctime)
+	{
+		response.ctime[0] = 0;
+		response.ctime[1] = htons(ctime[1]);
+		response.ctime[2] = htons(ctime[2]);
+		response.ctime[3] = htons(ctime[3]);
+		response.ctime[4] = htons(ctime[4]);
+		response.ctime[5] = htons(ctime[5]);
+		response.ctime[6] = htons(ctime[6]);
+	}
+	if(atime)
+	{
+		response.atime[0] = 0;
+		response.atime[1] = htons(atime[1]);
+		response.atime[2] = htons(atime[2]);
+		response.atime[3] = htons(atime[3]);
+		response.atime[4] = htons(atime[4]);
+		response.atime[5] = htons(atime[5]);
+		response.atime[6] = htons(atime[6]);
+	}
+	if(mtime)
+	{
+		response.mtime[0] = 0;
+		response.mtime[1] = htons(mtime[1]);
+		response.mtime[2] = htons(mtime[2]);
+		response.mtime[3] = htons(mtime[3]);
+		response.mtime[4] = htons(mtime[4]);
+		response.mtime[5] = htons(mtime[5]);
+		response.mtime[6] = htons(mtime[6]);
+	}
+	
+  	
+	// Send the response packet.
+	return network_send(request_socket, &response, sizeof(response));
+
+}
+int psp2link_response_rename(int result) 
+{
+	struct { unsigned int number; unsigned short length; int result; } PACKED response;
+
+	// Build the response packet.
+	response.number = htonl(PSP2LINK_RESPONSE_RENAME);
+	response.length = htons(sizeof(response));
+	response.result = htonl(result);
+    
+	// Send the response packet.
+	return network_send(request_socket, &response, sizeof(response));
+}
+
 int psp2link_response_open(int result) 
 {
 	struct { unsigned int number; unsigned short length; int result; } PACKED response;
@@ -739,12 +1226,11 @@ int psp2link_response_opendir(int result)
 int psp2link_response_closedir(int result) 
 {
 	struct { unsigned int number; unsigned short length; int result; } PACKED response;
-
 	// Build the response packet.
 	response.number = htonl(PSP2LINK_RESPONSE_CLOSEDIR);
 	response.length = htons(sizeof(response));
 	response.result = htonl(result);
-
+	
 	// Send the response packet.
 	return network_send(request_socket, &response, sizeof(response));
 
@@ -944,6 +1430,18 @@ void *psp2link_thread_request(void *thread_id)
 			case PSP2LINK_REQUEST_SETCWD:    
 				psp2link_request_setcwd(&packet);  
 				break;
+			case PSP2LINK_REQUEST_GETSTAT:    
+				psp2link_request_getstat(&packet);  
+				break;
+			case PSP2LINK_REQUEST_CHSTAT:    
+				psp2link_request_chstat(&packet);  
+				break;
+			case PSP2LINK_REQUEST_FGETSTAT:    
+				psp2link_request_fgetstat(&packet);  
+					break;
+			case PSP2LINK_REQUEST_RENAME:    
+				psp2link_request_rename(&packet);  
+					break;
 			default:
 				printf("Received unsupported request number\n");
 				break;

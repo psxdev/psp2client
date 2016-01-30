@@ -108,7 +108,7 @@ int main(int argc, char **argv, char **env)
 	if (strcmp(argv[-1], "listen") == 0) { } else
 	// An unknown command was requested.
 	{ printf("Error: Unknown command requested. (%s)\n", argv[-1]); print_usage(); return -1; }
-		 
+	
    
 	// Enter the main loop.
 	psp2link_mainloop(timeout);
