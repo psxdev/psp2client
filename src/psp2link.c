@@ -44,9 +44,10 @@ int psp2link_counter = 0;
 struct {
 	char *pathname; // remember to free when closing dir
 	DIR *dir;
+	int fd;
 } psp2link_dd[10] = {
-  { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL },
-  { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }
+  { NULL, NULL ,-1}, { NULL, NULL ,-1}, { NULL, NULL ,-1}, { NULL, NULL ,-1}, { NULL, NULL ,-1},
+  { NULL, NULL ,-1}, { NULL, NULL ,-1}, { NULL, NULL ,-1}, { NULL, NULL ,-1}, { NULL, NULL ,-1}
 };
 
 ////////////////////////
@@ -269,7 +270,9 @@ int psp2link_request_getstat(void *packet)
 	
 
 	// Fetch the entry's statistics.
-	if((stat(request->pathname, &stats))!=0)
+	int res = stat(request->pathname, &stats);
+	printf("stat %s: 0x%08X\n", request->pathname, res);
+	if(res!=0)
 	{
 		return psp2link_response_getstat(result, 0, 0, 0, NULL, NULL, NULL);
 	}
@@ -450,19 +453,9 @@ int psp2link_request_fgetstat(void *packet)
 	unsigned short ctime[8]; 
 	unsigned short atime[8];
 	unsigned short mtime[8];
-	int ret;
 	loctime=(struct tm *) malloc(sizeof(struct tm));
 	
-    if(ntohl(request->fd)<10)//we are using our own index for directories from 0 to 9 see psp2link_dd structure
-	{
-		//fd=dirfd(psp2link_dd[ntohl(request->fd)].dir); don't like it so better with stat for directories
-		ret=stat(psp2link_dd[ntohl(request->fd)].pathname,&stats);	
-	}
-	else
-	{
-		ret=fstat(ntohl(request->fd), &stats);
-	}
-	// Fetch the entry's statistics.
+    int ret=fstat(ntohl(request->fd), &stats);
 	if(ret!=0)
 	{
 		return psp2link_response_fgetstat(result, 0, 0, 0, NULL, NULL, NULL);
@@ -750,31 +743,48 @@ int psp2link_request_opendir(void *packet)
 				psp2link_dd[result].pathname = (char *) malloc(strlen(request->pathname) + 1);
 				strcpy(psp2link_dd[result].pathname, request->pathname);
 				psp2link_dd[result].dir = opendir(request->pathname);
+				psp2link_dd[result].fd = dirfd(psp2link_dd[result].dir);
+				result=psp2link_dd[result].fd;
 			}
 		}
 		
 	}
 	
 	// Send the response.
-	return psp2link_response_opendir(result);
+    return psp2link_response_opendir(result);
 }
 
 int psp2link_request_closedir(void *packet) 
 {
 	struct { unsigned int number; unsigned short length; int dd; } PACKED *request = packet;
 	int result = -1;
+	int loop0 = 0;
+	int slot = -1;
 
 	// Perform the request.
+	for (loop0=0; loop0<10; loop0++) 
+	{ 
+		if (psp2link_dd[loop0].fd == ntohl(request->dd)) 
+		{ 
+			slot = loop0; 
+			break; 
+		} 
+	}
+
+	if (slot == -1)
+		return psp2link_response_closedir(-1);
 	
-	result = closedir((DIR *)psp2link_dd[ntohl(request->dd)].dir);
-	if(psp2link_dd[ntohl(request->dd)].pathname)
+	result = closedir((DIR *)psp2link_dd[slot].dir);
+	if(psp2link_dd[slot].pathname)
 	{
-		free(psp2link_dd[ntohl(request->dd)].pathname);		
-		psp2link_dd[ntohl(request->dd)].pathname = NULL;
+		free(psp2link_dd[slot].pathname);		
+		psp2link_dd[slot].pathname = NULL;
 	}
 
 	// Free the directory descriptor.
-	psp2link_dd[ntohl(request->dd)].dir = NULL;
+	psp2link_dd[slot].dir = NULL;
+	psp2link_dd[slot].fd = -1;
+	
 
 	// Send the response.
 	return psp2link_response_closedir(result);
@@ -794,9 +804,26 @@ int psp2link_request_readdir(void *packet)
 	unsigned short atime[8];
 	unsigned short mtime[8];
 	
-	char tname[512];
+	char tname[PSP2LINK_MAX_PATH];
 	loctime=(struct tm *) malloc(sizeof(struct tm));
-	dir = psp2link_dd[ntohl(request->dd)].dir;
+	
+	int loop0 = 0;
+	int slot = -1;
+
+	// Perform the request.
+	for (loop0=0; loop0<10; loop0++) 
+	{ 
+		if (psp2link_dd[loop0].fd == ntohl(request->dd)) 
+		{ 
+			slot = loop0; 
+			break; 
+		} 
+	}
+
+	if (slot == -1)
+		return psp2link_response_readdir(0, 0, 0, 0, NULL, NULL, NULL, NULL);
+
+	dir = psp2link_dd[slot].dir;
 
 	// Perform the request.
 	dirent = readdir(dir);
@@ -811,7 +838,10 @@ int psp2link_request_readdir(void *packet)
 	}
 
 	// need to specify the directory as well as file name otherwise uses CWD!
-	sprintf(tname, "%s/%s", psp2link_dd[ntohl(request->dd)].pathname, dirent->d_name);
+	strcpy(tname, psp2link_dd[slot].pathname);
+	if (tname[strlen(tname) - 1] != '/')
+		strcat(tname, "/");
+	strcat(tname, dirent->d_name);
 
 	// Fetch the entry's statistics.
 	stat(tname, &stats);
@@ -1370,7 +1400,7 @@ void *psp2link_thread_console(void *thread_id)
 
 void *psp2link_thread_request(void *thread_id) 
 {
-	struct { unsigned int number; unsigned short length; char buffer[512]; } PACKED packet;
+	struct { unsigned int number; unsigned short length; char buffer[PSP2LINK_MAX_PATH * 2+6]; } PACKED packet;
 
 	// If the socket isn't open, this thread isn't needed.
 	if (request_socket < 0) { pthread_exit(thread_id); }

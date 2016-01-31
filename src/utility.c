@@ -52,48 +52,50 @@ void win_to_unix(char *pathname)
 	return;
 	
 }
-int fix_pathname(char *pathname) 
-{ 
-	int loop0 = 0;
-	char *token;
 
-	
-	// If empty, set a pathname default.
-	if (pathname[0] == 0 || (strlen(pathname)==6 && strcmp(pathname,"host0:")==0 ) )
-	{ 
-		strcpy(pathname,"host0:");
-#if defined (__CYGWIN__) || defined (__MINGW32__)
-  		_getcwd(pathname+6,PSP2LINK_MAX_PATH-6);
-#else
-  		getcwd(pathname+6,PSP2LINK_MAX_PATH-6);
-#endif
-	}
-
-	// Convert \ to / for unix compatibility.
-	win_to_unix(pathname);
-
-	char *aux=strdup(pathname);
-	
-	token=strtok(aux,":");
-	
-	if(strcmp(token,"host0")==0)
+int fix_pathname(char *pathname)
+{
+	char new_pathname[PSP2LINK_MAX_PATH];
+	memset(new_pathname, 0, sizeof(new_pathname));
+ 
+	if (strncmp(pathname, "host0:", 6) == 0)
 	{
-		
-		for(loop0=0; loop0<strlen(pathname)-6; loop0++) { pathname[loop0] = pathname[loop0+6]; }
-		pathname[loop0] = 0;
-		
+		if (pathname[6] != '/' && pathname[6] != '\\' && !strchr(pathname + 6, ':'))
+		{
+			// Get CWD
+#if defined (__CYGWIN__) || defined (__MINGW32__)
+			_getcwd(new_pathname, PSP2LINK_MAX_PATH);
+#else
+			getcwd(new_pathname, PSP2LINK_MAX_PATH);
+#endif
+ 
+			// Add slash if there's none yet
+			int len = strlen(new_pathname);
+			if (new_pathname[len - 1] != '/' && new_pathname[len - 1] != '\\')
+				strcat(new_pathname, "/");
+		}
+ 
+		// Add path
+		strcat(new_pathname, pathname + 6);
+ 
+		// Convert \ to / for unix compatibility.
+		win_to_unix(new_pathname);
+ 
+		// Remove end-slash
+		int len = strlen(new_pathname);
+		if (len >= 2 && new_pathname[len - 2] != ':' && new_pathname[len - 1] == '/')
+			new_pathname[len - 1] = '\0';
 	}
 	else
 	{
-		printf("Path received does not include host0: %s\n",pathname);
-		pathname[0]=0;
+		printf("Path received does not include host0: %s\n", new_pathname);
 	}
-
-// End function.
+   
+	printf("%s -> %s\n", pathname, new_pathname);
+	strcpy(pathname, new_pathname);
+ 
 	return 0;
-
 }
-
 int fix_argv(char *destination, char **argv) 
 { 
 	int loop0 = 0;
