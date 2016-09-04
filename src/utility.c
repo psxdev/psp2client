@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "utility.h"
+#include "debug.h"
 
 ///////////////////////
 // UTILITY FUNCTIONS //
@@ -88,10 +89,10 @@ int fix_pathname(char *pathname)
 	}
 	else
 	{
-		printf("Path received does not include host0: %s\n", new_pathname);
+		debugNetPrintf(INFO,"Path received does not include host0: %s\n", new_pathname);
 	}
    
-	printf("%s -> %s\n", pathname, new_pathname);
+	debugNetPrintf(INFO,"%s -> %s\n", pathname, new_pathname);
 	strcpy(pathname, new_pathname);
  
 	return 0;

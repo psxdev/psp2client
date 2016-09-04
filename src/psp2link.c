@@ -29,6 +29,7 @@
 #include "network.h"
 #include "psp2link.h"
 #include "utility.h"
+#include "debug.h"
 
 extern int errno ;
 int console_socket = -1;
@@ -76,7 +77,7 @@ int psp2link_connect(char *hostname)
 	{
 		request_socket = network_connect(hostname, 0x4711, SOCK_STREAM);
 		sleep(1);
-		printf("waiting psp2...\n");
+		debugNetPrintf(DEBUG,"waiting psp2...\n");
 	 	
 	}
 	if (request_socket > 0) 
@@ -216,7 +217,7 @@ int psp2link_request_getcwd(void *packet)
 	}
 
 	// Send the response.
-	printf("getcwd return %d %s\n",result,cwd);
+	debugNetPrintf(DEBUG,"getcwd return %d %s\n",result,cwd);
 	return psp2link_response_getcwd(result,cwd);
 }
 int psp2link_request_setcwd(void *packet)
@@ -250,7 +251,7 @@ int psp2link_request_setcwd(void *packet)
 	
 
 	// Send the response.
-	printf("setcwd return %d\n",result);
+	debugNetPrintf(DEBUG,"setcwd return %d\n",result);
 	return psp2link_response_setcwd(result);
 	
 }
@@ -271,7 +272,7 @@ int psp2link_request_getstat(void *packet)
 
 	// Fetch the entry's statistics.
 	int res = stat(request->pathname, &stats);
-	printf("stat %s: 0x%08X\n", request->pathname, res);
+	debugNetPrintf(DEBUG,"stat %s: 0x%08X\n", request->pathname, res);
 	if(res!=0)
 	{
 		return psp2link_response_getstat(result, 0, 0, 0, NULL, NULL, NULL);
@@ -537,16 +538,16 @@ int psp2link_request_rename(void *packet)
 	// Fix the arguments.
 	fix_pathname(request->name);
 	fix_pathname(request->newname);
-	printf("Original path %s newpath %s\n",request->name,request->newname);
+	debugNetPrintf(DEBUG,"Original path %s newpath %s\n",request->name,request->newname);
 	
 	if(stat(request->name, &stats) != 0)
 	{
-		printf("Original path %s not found\n",request->name);
+		debugNetPrintf(DEBUG,"Original path %s not found\n",request->name);
 		return psp2link_response_rename(result);
 	}
 	if(stat(request->newname, &statsnew) == 0)
 	{
-		printf("New path %s already exist\n",request->newname);
+		debugNetPrintf(DEBUG,"New path %s already exist\n",request->newname);
 		return psp2link_response_rename(result);
 	}
 	// Perform the request.
@@ -570,7 +571,7 @@ int psp2link_request_open(void *packet)
 	}
 	request->flags = fix_flags(ntohl(request->flags));
 
-	printf("Opening %s flags %x\n",request->pathname,request->flags);
+	debugNetPrintf(DEBUG,"Opening %s flags %x\n",request->pathname,request->flags);
     
 	if(((stat(request->pathname, &stats) == 0) && (!S_ISDIR(stats.st_mode))) || (request->flags & O_CREAT))
 	{
@@ -584,7 +585,7 @@ int psp2link_request_open(void *packet)
 	
 
 	// Send the response.
-	printf("Open return %d\n",result);
+	debugNetPrintf(DEBUG,"Open return %d\n",result);
 	return psp2link_response_open(result);
 
 }
@@ -704,11 +705,23 @@ int psp2link_request_lseek(void *packet)
 
 	// Perform the request.
 	result = lseek(ntohl(request->fd), ntohl(request->offset), ntohl(request->whence));
-	printf("%d result of lseek %d offset %d whence\n",result,ntohl(request->offset), ntohl(request->whence));
+	debugNetPrintf(DEBUG,"%d result of lseek %d offset %d whence\n",result,ntohl(request->offset), ntohl(request->whence));
 	// Send the response.
 	return psp2link_response_lseek(result);
 
 }
+
+#ifdef _WIN32
+
+int dirfd(DIR *dir)
+{
+	if (dir == NULL)
+		return -1;
+	
+	return dir;
+}
+
+#endif
 
 int psp2link_request_opendir(void *packet) 
 { 
@@ -922,7 +935,7 @@ int psp2link_request_remove(void *packet)
 	fix_pathname(request->name);
 	if(stat(request->name,&stats)!=0)
 	{
-		printf("path %s to delete not found\n",request->name);
+		debugNetPrintf(DEBUG,"path %s to delete not found\n",request->name);
 		return psp2link_response_remove(result);
 	}
 	// Perform the request.
@@ -941,7 +954,7 @@ int psp2link_request_mkdir(void *packet)
 	fix_pathname(request->name);
 	if(stat(request->name,&stats)==0)
 	{
-		printf("path %s already exist\n",request->name);
+		debugNetPrintf(DEBUG,"path %s already exist\n",request->name);
 		return psp2link_response_mkdir(result);
 	}
 	// request->flags = fix_flags(ntohl(request->flags));
@@ -968,7 +981,7 @@ int psp2link_request_rmdir(void *packet)
 	fix_pathname(request->name);
 	if(stat(request->name,&stats)!=0)
 	{
-		printf("dir  %s to delete does not exist\n",request->name);
+		debugNetPrintf(DEBUG,"dir  %s to delete does not exist\n",request->name);
 		return psp2link_response_rmdir(result);
 	}
 	// Perform the request.
@@ -1473,7 +1486,7 @@ void *psp2link_thread_request(void *thread_id)
 				psp2link_request_rename(&packet);  
 					break;
 			default:
-				printf("Received unsupported request number\n");
+				debugNetPrintf(INFO,"Received unsupported request number\n");
 				break;
 		}
    	 	

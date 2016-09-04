@@ -22,6 +22,7 @@
 #endif
 
 #include "network.h"
+#include "debug.h"
 
 ///////////////////////
 // NETWORK FUNCTIONS //
@@ -56,15 +57,15 @@ int network_connect(char *hostname, int port, int type)
 	//int ret;
   	// Connect the socket.
 	//ret=connect(sock, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr));
-	//printf("connect return %d\n",ret);
+	//debugNetPrintf(INFO,("connect return %d\n",ret);
 	//while(ret<0)
 	//{
 	//	ret=connect(sock, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr));
 	//	sleep(1);
-	  //  printf("waiting psp2 connection...\n");
+	  //  debugNetPrintf(INFO,("waiting psp2 connection...\n");
 		
 	//}
-		if (connect(sock, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr)) < 0) { printf("error connecting\n");return -2; }
+		if (connect(sock, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr)) < 0) { debugNetPrintf(DEBUG,"error connecting\n");return -2; }
 
   	// Return the socket.
   	return sock;

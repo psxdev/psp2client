@@ -46,6 +46,11 @@
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c src/utility.c -o obj/utility.o
 
+  OFILES += obj/debug.o
+  obj/debug.o: src/debug.c src/debug.h
+	@mkdir -p obj
+	$(CC) $(CFLAGS) -c src/debug.c -o obj/debug.o
+
  #####################
  ## CLIENT PROGRAMS ##
  #####################

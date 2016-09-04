@@ -16,6 +16,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "utility.h"
+#include "debug.h"
 #include "psp2link.h"
 #ifdef _WIN32
 #include "network.h"
@@ -51,7 +52,7 @@ int main(int argc, char **argv, char **env)
 		if (strncmp(argv[loop0], "-h", 2) == 0) { loop0++;
 
 			// Check to make sure the hostname value was actually supplied.
-			if (argc == loop0) { printf("Error: No hostname was supplied the '-h' option.\n"); print_usage(); return -1; }
+			if (argc == loop0) { debugNetPrintf(INFO,"No hostname was supplied the '-h' option.\n"); print_usage(); return -1; }
 
 			// Set the hostname to the supplied value.
 			strncpy(hostname, argv[loop0], sizeof(hostname));
@@ -63,7 +64,7 @@ int main(int argc, char **argv, char **env)
 		else if (strncmp(argv[loop0], "-t", 2) == 0) { loop0++;
 
 			// Check to make sure a value was actually supplied.
-			if (argc == loop0) { printf("Error: No timeout was supplied the '-t' option.\n"); print_usage(); return -1; }
+			if (argc == loop0) { debugNetPrintf(INFO,"No timeout was supplied the '-t' option.\n"); print_usage(); return -1; }
 
 			// Set the timeout to the supplied value.
 			timeout = atoi(argv[loop0]);
@@ -78,13 +79,13 @@ int main(int argc, char **argv, char **env)
 	loop0++; argc -= loop0; argv += loop0;
 
 	// Check to make sure a command was actually supplied.
-	if (argc < 0) { printf("Error: No command was supplied.\n"); print_usage(); return -1; }
+	if (argc < 0) { debugNetPrintf(INFO,"No command was supplied.\n"); print_usage(); return -1; }
 #ifdef _WIN32
 
 	// Startup network, under windows.
 	if (network_startup() < 0) 
 	{ 
-		printf("Error: Could not start up winsock.\n"); 
+		debugNetPrintf(INFO,"Could not start up winsock.\n"); 
 		return 1; 
 	}
 
@@ -93,7 +94,7 @@ int main(int argc, char **argv, char **env)
 	// Initialization by now psp2 hostname will not be used
 	if (psp2link_connect(hostname) < 0) 
 	{ 
-		printf("Error: Could not connect to the ps2link server. (%s)\n", hostname); 
+		debugNetPrintf(INFO,"Could not connect to the psp2link server. (%s)\n", hostname); 
 		return -1; 
 	}
 	
@@ -107,7 +108,7 @@ int main(int argc, char **argv, char **env)
 	 } else
 	if (strcmp(argv[-1], "listen") == 0) { } else
 	// An unknown command was requested.
-	{ printf("Error: Unknown command requested. (%s)\n", argv[-1]); print_usage(); return -1; }
+	{ debugNetPrintf(INFO,"Unknown command requested. (%s)\n", argv[-1]); print_usage(); return -1; }
 	
    
 	// Enter the main loop.

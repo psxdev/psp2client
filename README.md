@@ -134,6 +134,7 @@ PSP2CLIENT FOR PC/MAC
 ===================
  Changelog
 ===================
+  - 05/09/2016 customized debug output and adapted to my tools  not tested on windows 
   - 24/01/2016 fix windows support 
   
   
